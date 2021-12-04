@@ -3,9 +3,8 @@ package fsspgo
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
-	"strconv"
+	"net/url"
 )
 
 const (
@@ -20,36 +19,7 @@ func NewAPI(token string) *API {
 	return &API{token: token}
 }
 
-type Response struct {
-	Status    string          `json:"status"`
-	Code      uint            `json:"code"`
-	Exception string          `json:"exception"`
-	Response  json.RawMessage `json:"response"`
-}
-
-func (r *Response) CheckError() error {
-	if r.Code != 0 {
-		return errors.New(strconv.FormatUint(uint64(r.Code), 10) + ": " + r.Exception)
-	}
-
-	return nil
-}
-
-func (r *Response) Task() (string, error) {
-	task := new(
-		struct {
-			Task string `json:"task"`
-		},
-	)
-
-	if err := json.Unmarshal(r.Response, task); err != nil {
-		return "", err
-	}
-
-	return task.Task, nil
-}
-
-func (api *API) Single(param singleParam) (*Response, error) {
+func (api *API) Single(param SingleParam) (*Response, error) {
 	data := new(Response)
 
 	resp, err := http.Get(param.formatSingleParams(api.token))
@@ -65,12 +35,7 @@ func (api *API) Single(param singleParam) (*Response, error) {
 	return data, nil
 }
 
-type groupRequest struct {
-	Token   string         `json:"token"`
-	Request []innerRequest `json:"request"`
-}
-
-func (api *API) Group(params ...groupParam) (*Response, error) {
+func (api *API) Group(params ...GroupParam) (*Response, error) {
 	data := new(Response)
 	req := groupRequest{
 		Token:   api.token,
@@ -88,6 +53,62 @@ func (api *API) Group(params ...groupParam) (*Response, error) {
 	}
 
 	resp, err := http.Post(host+"/search/group", "application/json", buf)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (api *API) Status(task string) (*Response, error) {
+	params := make(url.Values)
+
+	params.Add("token", api.token)
+	params.Add("task", task)
+
+	path, err := url.Parse(host + "/status")
+	if err != nil {
+		panic(err)
+	}
+
+	path.RawQuery = params.Encode()
+
+	data := new(Response)
+
+	resp, err := http.Get(path.String())
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (api *API) Result(task string) (*Response, error) {
+	params := make(url.Values)
+
+	params.Add("token", api.token)
+	params.Add("task", task)
+
+	path, err := url.Parse(host + "/result")
+	if err != nil {
+		panic(err)
+	}
+
+	path.RawQuery = params.Encode()
+
+	data := new(Response)
+
+	resp, err := http.Get(path.String())
 	if err != nil {
 		return nil, err
 	}

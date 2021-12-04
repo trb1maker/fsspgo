@@ -9,7 +9,7 @@ type Person struct {
 	FirstName  string `json:"firstname"`
 	SecondName string `json:"secondname,omitempty"`
 	LastName   string `json:"lastname"`
-	Birthday   string `json:"birthday"`
+	Birthday   string `json:"birthday,omitempty"`
 	Region     uint8  `json:"region"`
 }
 
@@ -23,7 +23,7 @@ type Number struct {
 	Number string `json:"number"`
 }
 
-type singleParam interface {
+type SingleParam interface {
 	formatSingleParams(token string) string
 }
 
@@ -90,15 +90,7 @@ func (n *Number) formatSingleParams(token string) string {
 	return path.String()
 }
 
-type requestResponseType uint8
-
-const (
-	personRequestResponseType requestResponseType = iota + 1
-	legalRequestRequestResponseType
-	numberRequestRequestResponseType
-)
-
-type groupParam interface {
+type GroupParam interface {
 	formatGroupParams() innerRequest
 }
 
@@ -121,9 +113,4 @@ func (n *Number) formatGroupParams() innerRequest {
 		Type:   numberRequestRequestResponseType,
 		Params: n,
 	}
-}
-
-type innerRequest struct {
-	Type   requestResponseType `json:"type"`
-	Params groupParam          `json:"params"`
 }
