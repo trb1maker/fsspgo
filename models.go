@@ -9,7 +9,7 @@ type Person struct {
 	FirstName  string `json:"firstname"`
 	SecondName string `json:"secondname,omitempty"`
 	LastName   string `json:"lastname"`
-	Birthday   string `json:"birthday,omitempty"`
+	Birthdate  string `json:"birthdate,omitempty"`
 	Region     uint8  `json:"region"`
 }
 
@@ -39,8 +39,8 @@ func (p *Person) formatSingleParams(token string) string {
 		params.Add("secondname", p.SecondName)
 	}
 
-	if p.Birthday != "" {
-		params.Add("birthday", p.Birthday)
+	if p.Birthdate != "" {
+		params.Add("birthdate", p.Birthdate)
 	}
 
 	path, err := url.Parse(host + "/search/physical")
@@ -54,7 +54,7 @@ func (p *Person) formatSingleParams(token string) string {
 }
 
 func (l *Legal) formatSingleParams(token string) string {
-	params := new(url.Values)
+	params := make(url.Values)
 
 	params.Add("token", token)
 	params.Add("name", l.Name)
@@ -75,7 +75,7 @@ func (l *Legal) formatSingleParams(token string) string {
 }
 
 func (n *Number) formatSingleParams(token string) string {
-	params := new(url.Values)
+	params := make(url.Values)
 
 	params.Add("token", token)
 	params.Add("number", n.Number)

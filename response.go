@@ -6,14 +6,14 @@ import (
 	"strconv"
 )
 
-type Response struct {
+type response struct {
 	Status    string          `json:"status"`
 	Code      uint            `json:"code"`
 	Exception string          `json:"exception"`
 	Response  json.RawMessage `json:"response"`
 }
 
-func (r *Response) CheckError() error {
+func (r *response) checkError() error {
 	if r.Code != 0 {
 		return errors.New(strconv.FormatUint(uint64(r.Code), 10) + ": " + r.Exception)
 	}
@@ -21,7 +21,7 @@ func (r *Response) CheckError() error {
 	return nil
 }
 
-func (r *Response) Task() (string, error) {
+func (r *response) task() (string, error) {
 	task := new(struct {
 		Task string `json:"task"`
 	})
@@ -42,7 +42,7 @@ const (
 	StatusErr
 )
 
-func (r *Response) WorkStatus() (status, error) {
+func (r *response) status() (status, error) {
 	status := new(struct {
 		Status   status `json:"status"`
 		Progress string `json:"progress"`
@@ -76,7 +76,7 @@ type resultData struct {
 	} `json:"result"`
 }
 
-func (r *Response) Result() ([]Result, error) {
+func (r *response) result() ([]Result, error) {
 	data := new(resultData)
 
 	if err := json.Unmarshal(r.Response, data); err != nil {

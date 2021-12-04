@@ -19,24 +19,29 @@ func NewAPI(token string) *API {
 	return &API{token: token}
 }
 
-func (api *API) Single(param SingleParam) (*Response, error) {
-	data := new(Response)
+func (api *API) Single(param SingleParam) (string, error) {
+	data := new(response)
 
 	resp, err := http.Get(param.formatSingleParams(api.token))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(data); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return data, nil
+	if err := data.checkError(); err != nil {
+		return "", err
+	}
+
+	return data.task()
 }
 
-func (api *API) Group(params ...GroupParam) (*Response, error) {
-	data := new(Response)
+func (api *API) Group(params ...GroupParam) (string, error) {
+	data := new(response)
+
 	req := groupRequest{
 		Token:   api.token,
 		Request: []innerRequest{},
@@ -49,23 +54,27 @@ func (api *API) Group(params ...GroupParam) (*Response, error) {
 	buf := bytes.NewBuffer(nil)
 
 	if err := json.NewEncoder(buf).Encode(req); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	resp, err := http.Post(host+"/search/group", "application/json", buf)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(data); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return data, nil
+	if err := data.checkError(); err != nil {
+		return "", err
+	}
+
+	return data.task()
 }
 
-func (api *API) Status(task string) (*Response, error) {
+func (api *API) Status(task string) (status, error) {
 	params := make(url.Values)
 
 	params.Add("token", api.token)
@@ -78,22 +87,26 @@ func (api *API) Status(task string) (*Response, error) {
 
 	path.RawQuery = params.Encode()
 
-	data := new(Response)
+	data := new(response)
 
 	resp, err := http.Get(path.String())
 	if err != nil {
-		return nil, err
+		return status(13), err
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(data); err != nil {
-		return nil, err
+		return status(13), err
 	}
 
-	return data, nil
+	if err := data.checkError(); err != nil {
+		return status(13), err
+	}
+
+	return data.status()
 }
 
-func (api *API) Result(task string) (*Response, error) {
+func (api *API) Result(task string) ([]Result, error) {
 	params := make(url.Values)
 
 	params.Add("token", api.token)
@@ -106,7 +119,7 @@ func (api *API) Result(task string) (*Response, error) {
 
 	path.RawQuery = params.Encode()
 
-	data := new(Response)
+	data := new(response)
 
 	resp, err := http.Get(path.String())
 	if err != nil {
@@ -118,5 +131,9 @@ func (api *API) Result(task string) (*Response, error) {
 		return nil, err
 	}
 
-	return data, nil
+	if err := data.checkError(); err != nil {
+		return nil, err
+	}
+
+	return data.result()
 }
